@@ -84,6 +84,18 @@ def config_hash(yaml_str: str) -> str:
 # ============================================================
 
 
+def _host_port(host: str, port: int) -> str:
+    """格式化 host:port，IPv6 地址自動加方括號
+
+    IPv4: 1.2.3.4:8420
+    IPv6: [2406:da14::44f8]:8420
+    """
+    if ":" in host:
+        return f"[{host}]:{port}"
+    return f"{host}:{port}"
+
+
+
 def _build_forward_service(rule: dict, agents_map: dict) -> dict | None:
     """生成正向轉發的 GOST service 配置
 
@@ -182,7 +194,7 @@ def _build_tunnel_client(rule: dict, agents_map: dict) -> tuple[dict | None, dic
                 "nodes": [
                     {
                         "name": "node-0",
-                        "addr": f"{src_agent['host']}:{relay_port}",
+                        "addr": _host_port(src_agent['host'], relay_port),
                         "connector": {"type": "relay"},
                         "dialer": {"type": "tcp"},
                     }
