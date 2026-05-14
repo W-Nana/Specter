@@ -44,7 +44,6 @@ class SpecterBot(commands.Bot):
 
     def __init__(self, cfg: Config, db: Database):
         intents = discord.Intents.default()
-        intents.message_content = True
 
         super().__init__(
             command_prefix="!",  # slash commands 為主，prefix 做備用
