@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/go-gost/core/logger"
 	"github.com/go-gost/core/service"
@@ -51,11 +52,11 @@ func (e *Engine) ConfigHash() string {
 // Reload 重載 GOST 配置
 //
 // 流程:
-//   1. 解析 YAML → config.Config
-//   2. 停止所有現有服務
-//   3. 清空全局 registry
-//   4. 用 loader.Load() 註冊新的服務/鏈/等組件
-//   5. 啟動所有新服務
+//  1. 解析 YAML → config.Config
+//  2. 停止所有現有服務 + 等待端口釋放
+//  3. 用 loader.Load() 註冊新的服務/鏈/等組件
+//  4. 啟動所有新服務
+//  5. 失敗時清理 registry 中的半成品
 //
 // 調用鏈: doHeartbeat() → Reload()
 func (e *Engine) Reload(yamlConfig string, hash string) error {
@@ -71,14 +72,16 @@ func (e *Engine) Reload(yamlConfig string, hash string) error {
 	// 停止所有現有服務
 	e.stopServicesLocked()
 
+	// 等待端口完全釋放（TCP TIME_WAIT）
+	time.Sleep(500 * time.Millisecond)
+
 	// 設定全局配置
 	config.Set(cfg)
 
 	// 用 loader 將配置註冊到全局 registry
-	// loader.Load() 會：
-	//   - 清空並重新註冊所有 chains、services、等組件
-	//   - 解析配置生成運行時對象
 	if err := loader.Load(cfg); err != nil {
+		// loader.Load 可能已部分創建了 service（佔用端口），必須清理
+		e.stopServicesLocked()
 		return fmt.Errorf("載入 GOST 配置失敗: %w", err)
 	}
 

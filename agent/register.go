@@ -25,6 +25,7 @@ import (
 	// === Connectors ===
 	_ "github.com/go-gost/x/connector/direct"  // 直連 connector
 	_ "github.com/go-gost/x/connector/forward" // forward connector
+	_ "github.com/go-gost/x/connector/http"    // http connector（forward handler 默認使用）
 	_ "github.com/go-gost/x/connector/relay"   // relay connector（NAT 方連 relay 入口）
 
 	// === Dialers ===
