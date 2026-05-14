@@ -1,0 +1,19 @@
+[Unit]
+Description=Specter Agent (GOST Tunnel Manager)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/specter-agent --config /etc/specter/agent.conf
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+
+# 安全加固
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/etc/specter
+
+[Install]
+WantedBy=multi-user.target

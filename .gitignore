@@ -1,0 +1,7 @@
+# Git ignores
+.venv/
+*.db
+.env
+__pycache__/
+agent/dist/
+*.pyc
