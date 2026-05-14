@@ -159,6 +159,40 @@ class AgentCog(commands.Cog):
                 f"❌ Agent `{name}` 不存在", ephemeral=True
             )
 
+    @app_commands.command(name="agent_sethost", description="手動設定 Agent 地址（覆蓋自動檢測的 IP）")
+    @app_commands.describe(
+        name="Agent 名稱",
+        host="新地址（IPv4 或 IPv6，如 1.2.3.4）",
+    )
+    @app_commands.autocomplete(name=agent_autocomplete)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def agent_sethost(
+        self, interaction: discord.Interaction, name: str, host: str
+    ):
+        """手動設定 Agent 地址
+
+        用於覆蓋註冊時自動記錄的 IP。
+        場景：Agent 通過 IPv6 註冊，但其他 Agent 只有 IPv4。
+        """
+        agent = await self.db.get_agent_by_name(name)
+        if not agent:
+            await interaction.response.send_message(
+                f"❌ Agent `{name}` 不存在", ephemeral=True
+            )
+            return
+
+        old_host = agent["host"] or "N/A"
+        success = await self.db.set_agent_host(name, host)
+        if success:
+            await interaction.response.send_message(
+                f"✅ Agent `{name}` 地址: `{old_host}` → `{host}`\n"
+                f"涉及此 Agent 的隧道規則將在下次心跳時自動更新"
+            )
+        else:
+            await interaction.response.send_message(
+                f"❌ 設定失敗", ephemeral=True
+            )
+
 
 async def setup(bot):
     """Cog 載入入口，由 bot.py 調用"""

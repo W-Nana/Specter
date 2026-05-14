@@ -219,6 +219,18 @@ class Database:
         await self._db.commit()
         return cursor.rowcount > 0
 
+    async def set_agent_host(self, name: str, host: str) -> bool:
+        """手動設定 Agent 地址
+
+        調用鏈: cogs/agent.py /agent_sethost → set_agent_host()
+        用於覆蓋註冊時自動記錄的 IP（如需指定 IPv4 而非 IPv6）
+        """
+        cursor = await self._db.execute(
+            "UPDATE agents SET host = ? WHERE name = ?", (host, name)
+        )
+        await self._db.commit()
+        return cursor.rowcount > 0
+
     # ============================================================
     # 心跳處理
     # ============================================================
