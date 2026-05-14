@@ -138,7 +138,7 @@ def _build_relay_service(port: int) -> dict:
         "addr": f":{port}",
         "handler": {"type": "relay"},
         "listener": {"type": "tcp"},
-        "metadata": {"enableStats": True},
+        "metadata": {"enableStats": True, "bind": True},
     }
 
 
