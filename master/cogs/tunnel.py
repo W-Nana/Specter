@@ -16,6 +16,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from master.cogs import agent_autocomplete
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,6 +38,7 @@ class TunnelCog(commands.Cog):
         protocol="協議 (tcp/udp，默認 tcp)",
         relay_port="Relay 端口（默認使用全局配置）",
     )
+    @app_commands.autocomplete(nat_agent=agent_autocomplete, pub_agent=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def tunnel_add(
         self,
@@ -121,6 +124,7 @@ class TunnelCog(commands.Cog):
 
     @app_commands.command(name="tunnel_list", description="列出反向隧道")
     @app_commands.describe(agent="篩選指定 Agent（可選）")
+    @app_commands.autocomplete(agent=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def tunnel_list(self, interaction: discord.Interaction, agent: str = None):
         """列出反向隧道規則"""

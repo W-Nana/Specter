@@ -15,6 +15,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from master.cogs import agent_autocomplete
+
 logger = logging.getLogger(__name__)
 
 
@@ -102,6 +104,7 @@ class AgentCog(commands.Cog):
 
     @app_commands.command(name="agent_remove", description="移除 Agent（級聯刪除規則）")
     @app_commands.describe(name="Agent 名稱")
+    @app_commands.autocomplete(name=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def agent_remove(self, interaction: discord.Interaction, name: str):
         """移除 Agent 及其所有規則"""
@@ -115,6 +118,7 @@ class AgentCog(commands.Cog):
 
     @app_commands.command(name="agent_rename", description="重命名 Agent")
     @app_commands.describe(old_name="當前名稱", new_name="新名稱")
+    @app_commands.autocomplete(old_name=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def agent_rename(
         self, interaction: discord.Interaction, old_name: str, new_name: str
@@ -133,6 +137,7 @@ class AgentCog(commands.Cog):
 
     @app_commands.command(name="agent_interval", description="設定 Agent 心跳間隔")
     @app_commands.describe(name="Agent 名稱", seconds="間隔秒數")
+    @app_commands.autocomplete(name=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def agent_interval(
         self, interaction: discord.Interaction, name: str, seconds: int

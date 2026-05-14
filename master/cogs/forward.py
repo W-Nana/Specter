@@ -13,6 +13,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from master.cogs import agent_autocomplete
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +32,7 @@ class ForwardCog(commands.Cog):
         target="目標地址 (IP:port 格式，如 1.2.3.4:80)",
         protocol="協議 (tcp/udp，默認 tcp)",
     )
+    @app_commands.autocomplete(agent=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def forward_add(
         self,
@@ -109,6 +112,7 @@ class ForwardCog(commands.Cog):
 
     @app_commands.command(name="forward_list", description="列出正向轉發規則")
     @app_commands.describe(agent="篩選指定 Agent（可選）")
+    @app_commands.autocomplete(agent=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def forward_list(
         self, interaction: discord.Interaction, agent: str = None

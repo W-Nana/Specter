@@ -11,6 +11,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from master.cogs import agent_autocomplete
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,6 +34,7 @@ class StatsCog(commands.Cog):
 
     @app_commands.command(name="stats", description="查看 Agent 流量統計")
     @app_commands.describe(agent="Agent 名稱")
+    @app_commands.autocomplete(agent=agent_autocomplete)
     @app_commands.checks.has_permissions(administrator=True)
     async def stats(self, interaction: discord.Interaction, agent: str):
         """查看指定 Agent 的各 service 流量統計"""
