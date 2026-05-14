@@ -87,12 +87,12 @@ def config_hash(yaml_str: str) -> str:
 def _build_forward_service(rule: dict, agents_map: dict) -> dict | None:
     """生成正向轉發的 GOST service 配置
 
-    場景: Agent(A) 監聽 :listen_port → 轉發到 Agent(B):target_port
+    場景: Agent 監聯 :listen_port → 轉發到任意 target (IP:port)
+    forward 規則的目標地址直接使用 dst_addr 字段
     """
-    # 解析目標地址
-    target_addr = _resolve_target(rule, agents_map)
+    target_addr = rule.get("dst_addr")
     if not target_addr:
-        logger.warning("規則 #%d: 無法解析目標地址，跳過", rule["id"])
+        logger.warning("規則 #%d: 缺少目標地址 dst_addr，跳過", rule["id"])
         return None
 
     protocol = rule.get("protocol", "tcp")
@@ -192,21 +192,3 @@ def _build_tunnel_client(rule: dict, agents_map: dict) -> tuple[dict | None, dic
     }
 
     return service, chain
-
-
-def _resolve_target(rule: dict, agents_map: dict) -> str | None:
-    """解析轉發目標地址
-
-    優先使用 dst_agent_id（Agent 間轉發），
-    否則使用 dst_addr（任意 IP:port）
-    """
-    if rule.get("dst_agent_id"):
-        dst_agent = agents_map.get(rule["dst_agent_id"])
-        if dst_agent and dst_agent.get("host"):
-            return f"{dst_agent['host']}:{rule['target_port']}"
-        return None
-
-    if rule.get("dst_addr"):
-        return rule["dst_addr"]
-
-    return None

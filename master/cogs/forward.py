@@ -1,10 +1,10 @@
 """正向轉發命令
 
-/forward add <from_agent> <listen_port> <to_agent> <to_port> [protocol]
+/forward add <agent> <listen_port> <target> [protocol]
 /forward remove <rule_id>
 /forward list [agent]
 
-場景: Agent(A) 監聽 listen_port → 轉發到 Agent(B):to_port
+場景: Agent 監聽 listen_port → 轉發到任意 target (IP:port)
 調用鏈: Discord 用戶 → slash command → Database → Agent 下次心跳時拉取新配置
 """
 
@@ -25,63 +25,66 @@ class ForwardCog(commands.Cog):
 
     @app_commands.command(name="forward_add", description="創建正向轉發規則")
     @app_commands.describe(
-        from_agent="監聽方 Agent 名稱",
+        agent="監聽方 Agent 名稱",
         listen_port="監聽端口",
-        to_agent="目標 Agent 名稱（或輸入 IP:port 格式）",
-        to_port="目標端口",
+        target="目標地址 (IP:port 格式，如 1.2.3.4:80)",
         protocol="協議 (tcp/udp，默認 tcp)",
     )
     @app_commands.checks.has_permissions(administrator=True)
     async def forward_add(
         self,
         interaction: discord.Interaction,
-        from_agent: str,
+        agent: str,
         listen_port: int,
-        to_agent: str,
-        to_port: int,
+        target: str,
         protocol: str = "tcp",
     ):
-        """創建正向轉發: from_agent:listen_port → to_agent:to_port"""
+        """創建正向轉發: agent:listen_port → target (IP:port)"""
         if protocol not in ("tcp", "udp"):
             await interaction.response.send_message(
                 "❌ protocol 僅支持 tcp 或 udp", ephemeral=True
             )
             return
 
-        # 解析來源 Agent
-        src = await self.db.get_agent_by_name(from_agent)
-        if not src:
+        # 驗證 target 格式
+        if ":" not in target:
             await interaction.response.send_message(
-                f"❌ Agent `{from_agent}` 不存在", ephemeral=True
+                "❌ target 格式錯誤，應為 `IP:port`（如 `1.2.3.4:80`）",
+                ephemeral=True,
             )
             return
 
-        # 解析目標：可以是 Agent 名稱或直接 IP:port
-        dst_agent_id = None
-        dst_addr = None
-        dst = await self.db.get_agent_by_name(to_agent)
-        if dst:
-            dst_agent_id = dst["id"]
-        else:
-            # 視為 IP 地址（to_port 已單獨提供）
-            dst_addr = f"{to_agent}:{to_port}"
+        # 解析目標端口
+        try:
+            target_host, target_port_str = target.rsplit(":", 1)
+            target_port = int(target_port_str)
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ target 端口無效，應為數字", ephemeral=True
+            )
+            return
+
+        # 解析來源 Agent
+        src = await self.db.get_agent_by_name(agent)
+        if not src:
+            await interaction.response.send_message(
+                f"❌ Agent `{agent}` 不存在", ephemeral=True
+            )
+            return
 
         rule = await self.db.create_rule(
             rule_type="forward",
             src_agent_id=src["id"],
             listen_port=listen_port,
-            target_port=to_port,
-            dst_agent_id=dst_agent_id,
-            dst_addr=dst_addr,
+            target_port=target_port,
+            dst_addr=target,
             protocol=protocol,
         )
 
-        dst_display = to_agent if dst else dst_addr
         embed = discord.Embed(
             title="✅ 正向轉發規則已創建",
             description=(
-                f"**{from_agent}**:`{listen_port}` → "
-                f"**{dst_display}**:`{to_port}` ({protocol})"
+                f"**{agent}**:`{listen_port}` → `{target}` ({protocol})"
             ),
             color=0x2ECC71,
         )
@@ -130,15 +133,11 @@ class ForwardCog(commands.Cog):
         lines = []
         for r in rules:
             src_name = agents_map.get(r["src_agent_id"], {}).get("name", "?")
-            if r["dst_agent_id"]:
-                dst_name = agents_map.get(r["dst_agent_id"], {}).get("name", "?")
-                dst_display = f"{dst_name}:{r['target_port']}"
-            else:
-                dst_display = r["dst_addr"] or "?"
+            dst_display = r["dst_addr"] or f"?:{r['target_port']}"
 
             lines.append(
                 f"`#{r['id']}` {src_name}:`{r['listen_port']}` → "
-                f"{dst_display} ({r['protocol']})"
+                f"`{dst_display}` ({r['protocol']})"
             )
 
         embed = discord.Embed(

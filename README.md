@@ -49,8 +49,8 @@ curl -sSL https://raw.githubusercontent.com/W-Nana/Specter/main/install.sh \
 ### 4. 創建轉發規則
 
 ```
-# 正向轉發：AgentA:8080 → AgentB:80
-/forward_add AgentA 8080 AgentB 80
+# 正向轉發：AgentA:8080 → 1.2.3.4:80
+/forward_add AgentA 8080 1.2.3.4:80
 
 # 反向隧道：AgentA:2222 ← 隧道 ← AgentB:22
 /tunnel_add AgentB AgentA 2222 22
@@ -68,7 +68,7 @@ curl -sSL https://raw.githubusercontent.com/W-Nana/Specter/main/install.sh \
 | `/agent_remove <name>` | 移除 Agent |
 | `/agent_rename <old> <new>` | 重命名 |
 | `/agent_interval <name> <secs>` | 設定心跳間隔 |
-| `/forward_add <from> <port> <to> <to_port>` | 正向轉發 |
+| `/forward_add <agent> <port> <target>` | 正向轉發 (target=IP:port) |
 | `/forward_remove <id>` | 刪除轉發 |
 | `/forward_list [agent]` | 列出轉發 |
 | `/tunnel_add <nat> <pub> <pub_port> <local_port>` | 反向隧道 |

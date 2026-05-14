@@ -109,18 +109,24 @@ async def handle_heartbeat(request: web.Request) -> web.Response:
     if not agent:
         return web.json_response({"ok": False, "error": "認證失敗"}, status=401)
 
-    # 更新流量統計
-    stats_list = data.get("stats", [])
-    for stat in stats_list:
-        svc_name = stat.get("service")
-        if svc_name:
-            await db.upsert_stats(agent_id, svc_name, stat)
+    try:
+        # 更新流量統計
+        # 注意: Go nil slice → JSON null → Python None，不能用 .get(k, []) 的默認值
+        stats_list = data.get("stats") or []
+        for stat in stats_list:
+            svc_name = stat.get("service")
+            if svc_name:
+                await db.upsert_stats(agent_id, svc_name, stat)
 
-    # 生成此 Agent 的 GOST 配置
-    rules = await db.get_rules_for_agent(agent_id)
-    agents_map = await db.get_agents_map()
-    config_yaml = gost_builder.build_config(agent_id, rules, agents_map)
-    new_hash = gost_builder.config_hash(config_yaml)
+        # 生成此 Agent 的 GOST 配置
+        rules = await db.get_rules_for_agent(agent_id)
+        agents_map = await db.get_agents_map()
+        config_yaml = gost_builder.build_config(agent_id, rules, agents_map)
+        new_hash = gost_builder.config_hash(config_yaml)
+
+    except Exception as e:
+        logger.error("心跳處理異常 (agent=%s): %s", agent["name"], e, exc_info=True)
+        return web.json_response({"ok": False, "error": f"內部錯誤: {e}"}, status=500)
 
     # 比對 hash：只有配置變更時才下發
     config_response = None
